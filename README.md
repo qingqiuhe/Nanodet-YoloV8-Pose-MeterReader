@@ -35,7 +35,7 @@
 
 实际检测流程：
 
-![流程图.png](https://www.pnglog.com/n0Lf6E.png)
+[![pADp4lF.png](https://s21.ax1x.com/2024/10/31/pADp4lF.png)](https://imgse.com/i/pADp4lF)
 
 
 
