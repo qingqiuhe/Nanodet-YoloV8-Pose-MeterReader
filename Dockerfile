@@ -28,6 +28,8 @@ RUN git clone https://github.com/Tencent/ncnn.git /opt/ncnn && \
 
 # Copy project files
 COPY . /app
+# Copy weights
+COPY ./weights /home/hit/Project/YoloV8Pose/weights
 
 # Remove hardcoded paths in CMakeLists.txt
 RUN sed -i '/set(OpenCV_DIR/d' /app/CMakeLists.txt && \
@@ -40,6 +42,9 @@ RUN cd /app && \
     cmake .. && \
     make
 
+
+
 # Set the entrypoint
 WORKDIR /app
-CMD ["./bin/meterReader"]
+
+ENTRYPOINT ["/app/bin/meterReader"]
