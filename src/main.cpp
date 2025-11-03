@@ -4,23 +4,23 @@
 #include <chrono>
 #include <iostream>
 #include <vector>
+#include <fstream>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
-#define DET_PARAM  "/home/hit/Project/YoloV8Pose/weights/nanodet.param"
-#define DET_BIN "/home/hit/Project/YoloV8Pose/weights/nanodet.bin"
-#define YOLOV8_PARAM "/home/hit/Project/YoloV8Pose/weights/yolov8s-pose-opt.param"
-#define YOLOV8_BIN "/home/hit/Project/YoloV8Pose/weights/yolov8s-pose-opt.bin"
-#define SAVE_DIR "/home/hit/Project/YoloV8Pose/outputs/"
+#define DET_PARAM  "../weights/nanodet.param"
+#define DET_BIN "../weights/nanodet.bin"
+#define YOLOV8_PARAM "../weights/yolov8s-pose-opt.param"
+#define YOLOV8_BIN "../weights/yolov8s-pose-opt.bin"
 
 std::unique_ptr<NanoDet> nanoDet(new NanoDet(DET_PARAM, DET_BIN, false));
 std::unique_ptr<Yolov8Pose> yolov8Pose(new Yolov8Pose(YOLOV8_PARAM, YOLOV8_BIN, false));
 
 // #define SAVE_IMG
 
-void detectProcess(const cv::Mat& input_image, int index) {
+void detectProcess(const cv::Mat& input_image, int index, const std::string& output_dir, const std::string& image_name) {
     if (input_image.empty()) {
         std::cerr << "cv::imread read image failed" << std::endl;
         return;
@@ -35,6 +35,9 @@ void detectProcess(const cv::Mat& input_image, int index) {
 
     std::cout << "Object size: " << objects.size() << std::endl;
 
+    std::string output_filename = output_dir + "/" + image_name + ".txt";
+    std::ofstream output_file(output_filename);
+
     if (!objects.empty() && yolov8Pose->isValidROI(objects)) {
         std::vector<cv::Mat> meters_image = yolov8Pose->cut_roi_img(input_image, objects);
         std::vector<float> scale_values;
@@ -46,53 +49,41 @@ void detectProcess(const cv::Mat& input_image, int index) {
             {
                 if (scale_value <= 0.50f)
                 {
-                    // result = scale_values[i_results] + 0.012f;  // 0.01f
-                    std::cout << "scale_value: " << yolov8Pose->floatToString(scale_value + 0.012f) + " Mpa" << std::endl;
+                    output_file << "scale_value: " << yolov8Pose->floatToString(scale_value + 0.012f) + " Mpa" << std::endl;
                 }
                 else
                 {
-                    // result = scale_values[i_results] + 0.008f;  // 0.08f
-                    std::cout << "scale_value: " << yolov8Pose->floatToString(scale_value + 0.008f) + " Mpa" << std::endl;
+                    output_file << "scale_value: " << yolov8Pose->floatToString(scale_value + 0.008f) + " Mpa" << std::endl;
                 }
             }
         }else{
-            std::cout << "No objects detected." << std::endl;
+            output_file << "No objects detected." << std::endl;
         }
 
 #ifdef SAVE_IMG
-        // 如果需要保存每个处理后的图像，可以将cv::imwrite放在循环内部，并修改文件名以避免覆盖
         cv::Mat save_frame = yolov8Pose->result_visualizer(input_image, objects, scale_values);
         
-        // 保存处理后的图像
-        std::string save_path = std::string(SAVE_DIR) + std::to_string(index) + "_processed_image.jpg";
+        std::string save_path = output_dir + "/" + image_name + "_processed.jpg";
         cv::imwrite(save_path, save_frame);
         std::cout << "Saved processed image to " << save_path << std::endl;
 #else
-        // cv::Mat save_frame = yolov8Pose->result_visualizer(input_image, objects, scale_values);
-        // cv::imshow("save_frame", save_frame);
-        // cv::waitKey(0);
-    
 #endif
     } else {
-        std::cout << "No objects detected." << std::endl;
+        output_file << "No objects detected." << std::endl;
     }
+    output_file.close();
 }
 
-std::vector<cv::Mat> ReadImages(const std::string& pattern) 
+std::vector<cv::String> ReadImageNames(const std::string& pattern)
 {
     std::vector<cv::String> fn;
     cv::glob(pattern, fn, false);
-    std::vector<cv::Mat> images;
-    int count = fn.size(); // number of files in images folder
-    for (int i = 0; i < count; i++) {
-        images.emplace_back(cv::imread(fn[i]));
-    }
-    return images;
+    return fn;
 }
 
 int main(int argc, char* argv[]) {
-    if (argc < 3) {
-        std::cerr << "Usage: " << argv[0] << " <mode> <path>" << std::endl;
+    if (argc < 4) {
+        std::cerr << "Usage: " << argv[0] << " <mode> <path> <output_dir>" << std::endl;
         std::cerr << "Mode: single - Process a single image" << std::endl;
         std::cerr << "Folder - Process all images in a folder" << std::endl;
         return -1;
@@ -100,8 +91,7 @@ int main(int argc, char* argv[]) {
 
     std::string mode = argv[1];
     std::string path = argv[2];
-
-    int index = 0;
+    std::string output_dir = argv[3];
 
     if (mode == "single") {
         cv::Mat image = cv::imread(path);
@@ -111,43 +101,41 @@ int main(int argc, char* argv[]) {
             return -1;
         }
 
-        // 记录开始时间
         auto start = std::chrono::high_resolution_clock::now();
+        
+        std::string image_name = path.substr(path.find_last_of("/\") + 1);
+        std::string::size_type const p(image_name.find_last_of('.'));
+        std::string file_without_extension = image_name.substr(0, p);
 
-        // 调用 detectProcess 函数
-        detectProcess(image, index);
+        detectProcess(image, 0, output_dir, file_without_extension);
 
-        // 记录结束时间
         auto end = std::chrono::high_resolution_clock::now();
-
-        // 计算持续时间
         std::chrono::duration<double, std::milli> elapsed = end - start;
-
-        // 输出处理时间
         std::cout << "Processing time: " << elapsed.count() << " ms" << std::endl;
 
     } else if (mode == "folder") {
-        std::vector<cv::Mat> images = ReadImages(path + "/*.jpg");
+        std::vector<cv::String> image_files = ReadImageNames(path + "/*.jpg");
 
-        if (images.empty()) {
+        if (image_files.empty()) {
             std::cerr << "No images found in the folder " << path << std::endl;
             return -1;
         }
 
-        for (const auto& image : images) {
-            // 记录开始时间
+        int index = 0;
+        for (const auto& file : image_files) {
+            cv::Mat image = cv::imread(file);
+            if(image.empty()) continue;
+
             auto start = std::chrono::high_resolution_clock::now();
 
-            // 调用 detectProcess 函数
-            detectProcess(image, index);
+            std::string image_name = file.substr(file.find_last_of("/\") + 1);
+            std::string::size_type const p(image_name.find_last_of('.'));
+            std::string file_without_extension = image_name.substr(0, p);
 
-            // 记录结束时间
+            detectProcess(image, index, output_dir, file_without_extension);
+
             auto end = std::chrono::high_resolution_clock::now();
-
-            // 计算持续时间
             std::chrono::duration<double, std::milli> elapsed = end - start;
-
-            // 输出处理时间
             std::cout << "Processing time: " << elapsed.count() << " ms" << std::endl;
 
             index++;

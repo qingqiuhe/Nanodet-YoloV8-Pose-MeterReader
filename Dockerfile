@@ -42,9 +42,8 @@ RUN cd /app && \
     cmake .. && \
     make
 
-
+RUN mkdir /app/output
 
 # Set the entrypoint
 WORKDIR /app
-
-ENTRYPOINT ["/app/bin/meterReader"]
+CMD ["./bin/meterReader"]
