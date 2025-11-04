@@ -512,9 +512,8 @@ void Yolov8Pose::process_objects(const cv::Mat& image, const std::vector<Object>
 	cv::circle(res, start_point, 3, cv::Scalar(15, 242, 235), -1);
 	cv::circle(res, end_point, 3, cv::Scalar(15, 242, 235), -1);
 
-	cv::imshow("image", res);
-	cv::waitKey(0);
-// #endif
+	    // cv::imshow("image", res);
+		// cv::waitKey(0);// #endif
 
 	float angleRatio = getAngleRatio(start_point, end_point, pointer_point, center_point);
 	// std::cout << "angleRatio: " << floatToString(angleRatio) + " Degrees" << std::endl;
