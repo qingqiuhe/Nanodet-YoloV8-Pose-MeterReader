@@ -47,16 +47,7 @@ int main(int argc, char* argv[]) {
 
     httplib::Server svr;
 
-    // Handle OPTIONS requests for CORS preflight
-    svr.Options("/v1/det/single", [](const httplib::Request& req, httplib::Response& res) {
-        res.set_header("Access-Control-Allow-Origin", "*");
-        res.set_header("Access-Control-Allow-Headers", "Content-Type");
-        res.set_header("Access-Control-Allow-Methods", "POST, OPTIONS");
-        res.status = 200;
-    });
-
     svr.Post("/v1/det/single", [](const httplib::Request& req, httplib::Response& res) {
-        res.set_header("Access-Control-Allow-Origin", "*"); // Set CORS header for POST requests
         json response_json;
         try {
             // 1. Parse request
@@ -138,6 +129,13 @@ int main(int argc, char* argv[]) {
             res.set_content(response_json.dump(), "application/json");
         }
     });
+
+    // Serve static files from the React build directory
+    auto ret = svr.set_mount_point("/", "./web-ui/build");
+    if (!ret) {
+        std::cerr << "Error: The specified directory for static files does not exist." << std::endl;
+        return -1;
+    }
 
     std::cout << "Server starting on http://0.0.0.0:8080" << std::endl;
     svr.listen("0.0.0.0", 8080);

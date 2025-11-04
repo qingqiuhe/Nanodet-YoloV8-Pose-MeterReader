@@ -44,7 +44,7 @@ function App() {
       reader.onloadend = async () => {
         const base64Image = reader.result.split(',')[1]; // Get base64 string without data:image/jpeg;base64, prefix
 
-        const response = await fetch('http://localhost:8080/v1/det/single', {
+        const response = await fetch('/v1/det/single', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
