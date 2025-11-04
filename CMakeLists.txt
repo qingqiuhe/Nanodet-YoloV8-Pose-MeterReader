@@ -8,8 +8,8 @@ set(project_include ${project_root}/include)
 set(EXECUTABLE_OUTPUT_PATH ${project_root})
 
 option(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
-set(CMAKE_CXX_STANDARD 11)
-add_definitions(-std=c++11)
+set(CMAKE_CXX_STANDARD 14)
+add_definitions(-std=c++14)
 add_definitions(-pthread)
 
 find_package(OpenMP REQUIRED)
