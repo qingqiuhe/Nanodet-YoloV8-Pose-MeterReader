@@ -126,8 +126,18 @@ int main(int argc, char* argv[]) {
         // 输出处理时间
         std::cout << "Processing time: " << elapsed.count() << " ms" << std::endl;
 
-    } else if (mode == "folder") {
-        std::vector<cv::Mat> images = ReadImages(path + "/*.jpg");
+        } else if (mode == "folder") {
+        std::vector<cv::Mat> images;
+        auto append_images = [&](const std::string& pattern){
+            std::vector<cv::Mat> tmp = ReadImages(pattern);
+            images.insert(images.end(), tmp.begin(), tmp.end());
+        };
+
+        // 支持 jpg 和 png，同时兼容大小写扩展名
+        append_images(path + "/*.jpg");
+        append_images(path + "/*.png");
+        append_images(path + "/*.JPG");
+        append_images(path + "/*.PNG");
 
         if (images.empty()) {
             std::cerr << "No images found in the folder " << path << std::endl;
