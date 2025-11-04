@@ -47,7 +47,16 @@ int main(int argc, char* argv[]) {
 
     httplib::Server svr;
 
+    // Handle OPTIONS requests for CORS preflight
+    svr.Options("/v1/det/single", [](const httplib::Request& req, httplib::Response& res) {
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_header("Access-Control-Allow-Headers", "Content-Type");
+        res.set_header("Access-Control-Allow-Methods", "POST, OPTIONS");
+        res.status = 200;
+    });
+
     svr.Post("/v1/det/single", [](const httplib::Request& req, httplib::Response& res) {
+        res.set_header("Access-Control-Allow-Origin", "*"); // Set CORS header for POST requests
         json response_json;
         try {
             // 1. Parse request
